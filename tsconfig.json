@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,             /* <- Habilita la importación default */
+    "allowSyntheticDefaultImports": true,  
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",

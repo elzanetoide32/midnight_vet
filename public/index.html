@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veterinaria - Midnight UAI</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 650px; margin: 40px auto; padding: 20px; background: #f4f7f6; color: #333; }
+    .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 25px; }
+    h1 { text-align: center; color: #1a252f; margin-bottom: 30px; }
+    h2 { color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+    label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.9em; }
+    input, select, textarea, button { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; }
+    textarea { resize: vertical; height: 80px; }
+    button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; transition: background 0.2s; }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #bdc3c7; cursor: not-allowed; }
+    .status { margin-top: 20px; padding: 15px; border-radius: 5px; display: none; word-break: break-all; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  </style>
+</head>
+<body>
+
+  <h1>Veterinaria UAI (Midnight Network)</h1>
+
+  <!-- Formulario 1: Registrar Mascota -->
+  <div class="card">
+    <h2>1. Registrar Mascota</h2>
+    <form id="petForm">
+      <label>ID Mascota:
+        <input type="text" id="petId" placeholder="PAC-101" required>
+      </label>
+      <label>Nombre:
+        <input type="text" id="nombre" placeholder="Firulais" required>
+      </label>
+      <label>Especie:
+        <select id="especie">
+          <option value="0">Perro</option>
+          <option value="1">Gato</option>
+          <option value="2">Ave</option>
+          <option value="3">Conejo</option>
+          <option value="4">Otro</option>
+        </select>
+      </label>
+      <label>Raza:
+        <input type="text" id="raza" placeholder="Mestizo" required>
+      </label>
+      <label>Año de Nacimiento:
+        <input type="number" id="anioNacimiento" value="2022" required>
+      </label>
+      <label>Dirección / Wallet del Dueño (Opcional):
+        <input type="text" id="ownerAddress" placeholder="Deja en blanco para usar la tuya">
+      </label>
+      <button type="submit" id="btnPet">Registrar Mascota en Midnight</button>
+    </form>
+  </div>
+
+  <!-- Formulario 2: Registrar Visita Médica -->
+  <div class="card">
+    <h2>2. Registrar Visita Veterinaria</h2>
+    <form id="visitForm">
+      <label>ID Mascota:
+        <input type="text" id="visitPetId" placeholder="PAC-101" required>
+      </label>
+      <label>Dirección / Wallet del Médico (Opcional):
+        <input type="text" id="doctorAddress" placeholder="Deja en blanco para usar la wallet del servidor">
+      </label>
+      <label>Diagnóstico / Nota Médica:
+        <textarea id="nota" placeholder="Vacunación quíntuple y chequeo general" required></textarea>
+      </label>
+      <button type="submit" id="btnVisit">Guardar Visita Médica</button>
+    </form>
+  </div>
+
+  <!-- Caja de Estado Global -->
+  <div id="statusBox" class="status"></div>
+
+  <script>
+    function showStatus(msg, isError = false) {
+      const box = document.getElementById('statusBox');
+      box.style.display = 'block';
+      box.className = 'status ' + (isError ? 'error' : 'success');
+      box.innerText = msg;
+    }
+
+    // Handlers 1: Registrar Mascota
+    document.getElementById('petForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnPet');
+      btn.disabled = true;
+      showStatus('⏳ Generando ZK Proof y registrando mascota en Midnight (30-60s)...');
+
+      try {
+        const res = await fetch('/api/mascotas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: document.getElementById('petId').value,
+            nombre: document.getElementById('nombre').value,
+            especie: document.getElementById('especie').value,
+            raza: document.getElementById('raza').value,
+            anioNacimiento: document.getElementById('anioNacimiento').value,
+            ownerAddress: document.getElementById('ownerAddress').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showStatus('✅ Mascota registrada con éxito en Midnight.\nTx ID: ' + data.txId);
+        } else {
+          showStatus('❌ Error: ' + data.error, true);
+        }
+      } catch (err) {
+        showStatus('❌ Error de conexión con el servidor: ' + err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Handlers 2: Registrar Visita
+    document.getElementById('visitForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnVisit');
+      btn.disabled = true;
+      showStatus('⏳ Generando ZK Proof y registrando consulta médica en Midnight (30-60s)...');
+
+      try {
+        const res = await fetch('/api/visitas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            petId: document.getElementById('visitPetId').value,
+            doctorAddress: document.getElementById('doctorAddress').value,
+            nota: document.getElementById('nota').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showStatus('✅ Visita médica registrada con éxito.\nTx ID: ' + data.txId);
+        } else {
+          showStatus('❌ Error: ' + data.error, true);
+        }
+      } catch (err) {
+        showStatus('❌ Error de conexión con el servidor: ' + err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

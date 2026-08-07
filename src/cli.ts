@@ -7,7 +7,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocket } from 'ws';
-import { Buffer } from 'buffer';
 
 // Midnight SDK imports
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
@@ -43,7 +42,24 @@ if (!fs.existsSync(contractPath)) {
   process.exit(1);
 }
 
-const HelloWorld = await import(pathToFileURL(contractPath).href);
+// Carga e inspección segura del módulo del contrato (ESM / CommonJS fallback)
+const importedContract = await import(pathToFileURL(contractPath).href);
+const HelloWorld = importedContract.default ?? importedContract;
+
+// Debajo de: const HelloWorld = importedContract.default ?? importedContract;
+
+console.log('=== INSPECCIÓN DEL CONTRATO COMPILADO ===');
+console.log('Claves en HelloWorld:', Object.keys(HelloWorld));
+if (HelloWorld.Contract) {
+  console.log('Claves en HelloWorld.Contract:', Object.keys(HelloWorld.Contract));
+}
+if (HelloWorld.Species) {
+  console.log('HelloWorld.Species es:', HelloWorld.Species);
+}
+if (HelloWorld.marshallers) {
+  console.log('Marshallers disponibles:', Object.keys(HelloWorld.marshallers));
+}
+console.log('==========================================\n');
 
 const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contract).pipe(
   CompiledContract.withVacantWitnesses,
@@ -52,18 +68,24 @@ const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contrac
 
 // ─── Funciones Auxiliares ─────────────────────────────────────────────────────
 
+/** Convierte un string a Uint8Array de 32 bytes para Bytes<32> */
+/** Convierte un string a Uint8Array de 32 bytes con relleno correcto para Bytes<32> */
 function stringToBytes32(text: string): Uint8Array {
   const bytes = new Uint8Array(32);
   const encoded = new TextEncoder().encode(text);
+  // Rellenar desde la izquierda o derecha según requiera el contrato (aquí truncamos/copiamos seguro)
   bytes.set(encoded.slice(0, 32));
   return bytes;
 }
-
-function stringToOpaque(text: string): Uint8Array {
-  return new TextEncoder().encode(text);
-}
-
 const SPECIES_NAMES = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
+const SPECIES_KEYS = ['dog', 'cat', 'bird', 'rabbit', 'other'] as const;
+
+/** Obtiene el valor del Enum Species directo desde HelloWorld.Species */
+function getSpeciesValue(index: number) {
+  const key = SPECIES_KEYS[index] ?? 'dog';
+  // Retorna directamente 0, 1, 2, 3 o 4 según el Enum de Compact
+  return HelloWorld.Species[key];
+}
 
 // ─── Providers ─────────────────────────────────────────────────────────────────
 
@@ -134,14 +156,13 @@ async function main() {
       const elapsed = Math.round((Date.now() - syncStart) / 1000);
       process.stdout.write(`\r  ⏳ Sincronizando... (${elapsed}s transcurridos)   `);
     }, 5000);
-    const state = await walletCtx.wallet.waitForSyncedState();
+    await walletCtx.wallet.waitForSyncedState();
     clearInterval(syncInterval);
     process.stdout.write('\r  ✓ Sincronizado con la red.                                   \n');
 
     await persistWalletState(network, walletCtx);
+    const state = await walletCtx.wallet.waitForSyncedState();
     const balance = state.unshielded.balances[unshieldedToken().raw] ?? 0n;
-    
-    // Obtener la dirección Bech32 de la billetera activa
     const myAddress = walletCtx.unshieldedKeystore.getBech32Address().toString();
 
     console.log(`  Mi Dirección: ${myAddress}`);
@@ -178,59 +199,64 @@ async function main() {
 
       switch (choice.trim()) {
         case '1': {
-          console.log('\n--- Registro de Mascota ---');
-          const petId = await rl.question('  ID de la mascota (ej. PAC-101): ');
-          const name = await rl.question('  Nombre: ');
+          console.log('\n--- Registrar Nueva Mascota ---');
+          const petIdInput = await rl.question('  ID de la mascota (ej. pet-01): ');
+          const ownerInput = await rl.question('  Dirección del propietario (Enter para usar la tuya): ');
+          const nameInput = await rl.question('  Nombre de la mascota: ');
           
           console.log('\n  Especies disponibles:');
-          console.log('  1. Perro | 2. Gato | 3. Ave | 4. Conejo | 5. Otro');
-          const speciesOption = await rl.question('  Especie (1-5): ');
-          const speciesIndex = Math.max(0, Math.min(4, parseInt(speciesOption) - 1));
+          console.log('  0. Perro | 1. Gato | 2. Ave | 3. Conejo | 4. Otro');
+          const speciesInput = await rl.question('  Especie (número del 0 al 4): ');
+          
+          const breedInput = await rl.question('  Raza: ');
+          const birthYearInput = await rl.question('  Año de nacimiento (ej. 2022): ');
 
-          const breed = await rl.question('  Raza: ');
-          const birthYear = await rl.question('  Año de nacimiento (ej. 2021): ');
+          // Transformar a Bytes<32> usando la función auxiliar
+          const petIdBytes = stringToBytes32((petIdInput ?? '').trim());
+          const ownerAddressStr = ownerInput.trim() || myAddress;
+          const ownerBytes = stringToBytes32(ownerAddressStr.trim());
 
-          const customOwner = await rl.question(`  Dirección del dueño (Enter para usar la tuya: ${myAddress.slice(0, 10)}...): `);
-          const ownerAddress = customOwner.trim() || myAddress;
+          const birthYearBigInt = BigInt((birthYearInput ?? '2024').trim());
+          const speciesNum = Number((speciesInput ?? '0').trim());
 
           console.log('\n  Generando ZK Proof y registrando mascota (30-60s)...');
           try {
-            // Llamada al circuito registerPet pasando ownerAddress
             const tx = await deployed.callTx.registerPet(
-  stringToBytes32(petId),
-  stringToBytes32(ownerAddress), // <- Convertir la dirección string a Bytes<32>
-  stringToOpaque(name),
-  speciesIndex,
-  stringToOpaque(breed),
-  BigInt(parseInt(birthYear) || 2024)
-);
+              petIdBytes,                  // 0. petId (Bytes<32>)
+              ownerBytes,                  // 1. owner (Bytes<32>)  <- ¡Aquí iba el string por error!
+              (nameInput ?? '').trim(),    // 2. name (Opaque<"string">)
+              speciesNum,                  // 3. species (Species)
+              (breedInput ?? '').trim(),   // 4. breed (Opaque<"string">)
+              birthYearBigInt              // 5. birthYear (Uint<16>)
+            );
 
-            console.log(`\n  ✅ Mascota "${name}" (${SPECIES_NAMES[speciesIndex]}) registrada a favor de: ${ownerAddress}`);
-            console.log(`  ID Transacción: ${tx.public.txId}`);
-            console.log(`  Bloque: ${tx.public.blockHeight}\n`);
-          } catch (error) {
-            console.error('\n  ❌ Error:', error instanceof Error ? error.message : error);
+            console.log(`\n  ✅ Mascota registrada con éxito.`);
+            console.log(`  ID Transacción: ${tx.public?.txId || tx.txHash}\n`);
+          } catch (error: any) {
+            console.error('\n  ❌ Error al registrar:', error?.message || error);
           }
           break;
         }
-
         case '2': {
           console.log('\n--- Registrar Visita Veterinaria ---');
-          const petId = await rl.question('  ID de la mascota registrada: ');
-          const note = await rl.question('  Nota de la visita / Vacuna / Diagnóstico: ');
+          const petId = await rl.question('  ID de la mascota (ej. pet-01): ');
+          const note = await rl.question('  Diagnóstico / Vacuna / Indicaciones: ');
 
-          console.log('\n  Generando ZK Proof y guardando visita (30-60s)...');
+          console.log(`\n  Médico responsable: ${myAddress}`);
+          console.log('  Generando ZK Proof y registrando visita (30-60s)...');
+
           try {
             const tx = await deployed.callTx.addVisit(
-              stringToBytes32(petId),
-              stringToOpaque(note)
+              stringToBytes32(petId.trim()),
+              stringToBytes32(myAddress.trim()),
+              note.trim()
             );
 
-            console.log(`\n  ✅ Visita registrada correctamente.`);
+            console.log(`\n  ✅ Visita registrada con éxito por la wallet médica: ${myAddress}`);
             console.log(`  ID Transacción: ${tx.public.txId}`);
             console.log(`  Bloque: ${tx.public.blockHeight}\n`);
           } catch (error) {
-            console.error('\n  ❌ Error:', error instanceof Error ? error.message : error);
+            console.error('\n  ❌ Error al registrar visita:', error instanceof Error ? error.message : error);
           }
           break;
         }
