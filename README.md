@@ -1,11 +1,11 @@
 # veterinaria-v1.1
 Idea
-Historial Médico y Trazabilidad Sanitaria para Mascotas en Blockchain
+Historial Médico y Trazabilidad Sanitaria para Pacientes Veterinarios en Blockchain
 
-Una dApp descentralizada que permite registrar, verificar y compartir la historia clínica, vacunas, intervenciones y linaje de mascotas de forma inmutable, garantizando la privacidad de los datos personales del dueño.
+Una dApp descentralizada que permite registrar, verificar y compartir la historia clínica, vacunas, intervenciones y linaje de pacientes veterinarios de forma inmutable, garantizando la privacidad de los datos personales del tutor.
 
 ¿Por qué?
-El historial médico veterinario actual está completamente fragmentado entre distintas clínicas, registros en papel fáciles de perder y bases de datos privadas que no se comunican entre sí. Cuando una mascota cambia de veterinario, se traslada de ciudad o es adoptada, su historial médico suele perderse, lo que conduce a:
+El historial médico veterinario actual está completamente fragmentado entre distintas clínicas, registros en papel fáciles de perder y bases de datos privadas que no se comunican entre sí. Cuando un paciente veterinario cambia de veterinario, se traslada de ciudad o es adoptado, su historial médico suele perderse, lo que conduce a:
 
 Duplicación ineficiente de tratamientos y vacunas.
 
@@ -14,30 +14,13 @@ Riesgo de diagnósticos erróneos por falta de antecedentes médicos verificable
 Falta de certeza en adopciones o transferencias de propiedad respecto al estado de salud o pedigree real del animal.
 
 ¿Para qué?
-Unificar el historial sanitario: Crear una identidad digital e inmutable para cada mascota (pasaporte sanitario digital) accesible desde cualquier lugar.
+Unificar el historial sanitario: Crear una identidad digital e inmutable para cada paciente veterinario (pasaporte sanitario digital) accesible desde cualquier lugar.
 
 Garantizar la autenticidad de certificados: Asegurar que los registros de vacunación y tratamientos sean firmados digitalmente por veterinarios matriculados y no puedan ser falsificados.
 
-Controlar la propiedad de los datos: Permitir que únicamente el dueño de la mascota otorgue o revoque permisos de lectura sobre el historial médico a clínicas, guarderías o compradores.
+Controlar la propiedad de los datos: Permitir que únicamente el tutor del paciente veterinario otorgue o revoque permisos de lectura sobre el historial médico a clínicas, guarderías o compradores.
 
 Facilitar la trazabilidad: Simplificar procesos legales, trámites de viaje internacional y transferencias de adopción de manera transparente.
-
-¿Por qué Midnight y no otra blockchain?
-Privacidad de datos personales (ZK-SNARKs integrados):
-
-A diferencia de blockchains públicas como Ethereum o Cardano (donde la dirección pública de la billetera, las transacciones y los datos vinculados son completamente visibles para cualquier observador), Midnight utiliza Zero-Knowledge Proofs (ZKPs) mediante el lenguaje Compact. Esto permite probar la validez de un certificado sanitario o una vacuna sin exponer los datos personales del dueño (nombre, dirección, teléfono) ni el historial médico completo a terceros no autorizados.
-
-Cumplimiento normativo y privacidad selectiva (Regulated Privacy):
-
-Midnight está diseñada desde su origen para equilibrar la privacidad del usuario con la divulgación selectiva de datos. En el contexto veterinario, permite revelar solo lo necesario: por ejemplo, demostrarle a una guardería o a un control fronterizo que la mascota tiene la vacuna antirrábica al día sin necesidad de revelar toda la historia clínica previa.
-
-Separación entre estado privado y público:
-
-Midnight permite mantener la lógica de verificación de contratos inteligentes en la cadena mientras mantiene los datos médicos sensibles protegidos fuera del alcance público, eliminando el riesgo de doxxing o perfilamiento comercial basado en los consumos o tratamientos de las mascotas.
-
-Escalabilidad y costos predecibles:
-
-Operar contratos con pruebas de conocimiento cero en la arquitectura de Midnight optimiza el costo por transacción en comparación con intentar implementar circuitos ZK complejos sobre redes de capa 1 no optimizadas para privacidad.
 ## Quick start
 
 Requirements: Node 22, Docker (with Compose v2), and the Compact compiler at the version pinned in `.compact-version` at the create-mn-app repo root (the version this project was scaffolded against).

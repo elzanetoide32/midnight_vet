@@ -45,6 +45,28 @@ export function startWebServer(deployedContract: any, port = 3000) {
     }
   });
 
+  app.get('/api/visitas/:petId', async (req: Request, res: Response) => {
+    try {
+      const { petId } = req.params;
+      const viewingWallet = req.query.walletAddress as string; // Quién quiere ver
+
+      // Llamada al contrato de Midnight pasando la wallet que consulta
+      // El circuito ZK evaluará si 'viewingWallet' es el dueño o tiene permisos
+      const visitas = await deployedContract.callRead.getVisits(
+        petId.trim(),
+        viewingWallet.trim()
+      );
+
+      res.json({ success: true, visitas });
+    } catch (error: any) {
+      // Si la wallet no tiene permisos, el contrato lanzará un error ZK o de aserción
+      res.status(403).json({ 
+        success: false, 
+        error: "Acceso denegado: Tu wallet no tiene permisos ZK para ver este historial." 
+      });
+    }
+  });
+
   app.listen(port, () => {
     console.log(`\n  🌐 Servidor Web de la Veterinaria activo en: http://localhost:${port}\n`);
   });
