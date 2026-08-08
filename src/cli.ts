@@ -18,6 +18,10 @@ import { resolveNetwork, getOrCreateWallet, formatWalletBackupNotice, getDeploym
 import { createWallet, persistWalletState, unshieldedToken, type WalletContext } from './wallet';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 
+// Importación estricta de tipos y valores desde el contrato compilado (usa index.d.ts automáticamente)
+import type * as HelloWorldContract from '../contracts/managed/hello-world/contract/index.js';
+import { Species } from '../contracts/managed/hello-world/contract/index.js';
+
 import { startWebServer } from './server';
 
 // @ts-expect-error Requerido para sincronización de billetera
@@ -42,50 +46,14 @@ if (!fs.existsSync(contractPath)) {
   process.exit(1);
 }
 
-// Carga e inspección segura del módulo del contrato (ESM / CommonJS fallback)
+// Carga del módulo del contrato
 const importedContract = await import(pathToFileURL(contractPath).href);
-const HelloWorld = importedContract.default ?? importedContract;
-
-// Debajo de: const HelloWorld = importedContract.default ?? importedContract;
-
-console.log('=== INSPECCIÓN DEL CONTRATO COMPILADO ===');
-console.log('Claves en HelloWorld:', Object.keys(HelloWorld));
-if (HelloWorld.Contract) {
-  console.log('Claves en HelloWorld.Contract:', Object.keys(HelloWorld.Contract));
-}
-if (HelloWorld.Species) {
-  console.log('HelloWorld.Species es:', HelloWorld.Species);
-}
-if (HelloWorld.marshallers) {
-  console.log('Marshallers disponibles:', Object.keys(HelloWorld.marshallers));
-}
-console.log('==========================================\n');
+const HelloWorld = (importedContract.default ?? importedContract) as typeof HelloWorldContract;
 
 const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contract).pipe(
   CompiledContract.withVacantWitnesses,
   CompiledContract.withCompiledFileAssets(zkConfigPath),
 );
-
-// ─── Funciones Auxiliares ─────────────────────────────────────────────────────
-
-/** Convierte un string a Uint8Array de 32 bytes para Bytes<32> */
-/** Convierte un string a Uint8Array de 32 bytes con relleno correcto para Bytes<32> */
-function stringToBytes32(text: string): Uint8Array {
-  const bytes = new Uint8Array(32);
-  const encoded = new TextEncoder().encode(text);
-  // Rellenar desde la izquierda o derecha según requiera el contrato (aquí truncamos/copiamos seguro)
-  bytes.set(encoded.slice(0, 32));
-  return bytes;
-}
-const SPECIES_NAMES = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
-const SPECIES_KEYS = ['dog', 'cat', 'bird', 'rabbit', 'other'] as const;
-
-/** Obtiene el valor del Enum Species directo desde HelloWorld.Species */
-function getSpeciesValue(index: number) {
-  const key = SPECIES_KEYS[index] ?? 'dog';
-  // Retorna directamente 0, 1, 2, 3 o 4 según el Enum de Compact
-  return HelloWorld.Species[key];
-}
 
 // ─── Providers ─────────────────────────────────────────────────────────────────
 
@@ -127,7 +95,7 @@ async function createProviders(walletCtx: WalletContext) {
 
 async function main() {
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log('║                   Veterinaria UAI - CLI                      ║');
+  console.log('║                    Veterinaria UAI - CLI                     ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   const rl = createInterface({ input: stdin, output: stdout });
@@ -145,11 +113,7 @@ async function main() {
 
     console.log('  Conectando billetera...');
     const walletCtx = await createWallet({ network, networkConfig, seed });
-    const restoredCount = Object.values(walletCtx.restored).filter(Boolean).length;
-    if (restoredCount > 0) {
-      console.log(`  Restauradas ${restoredCount}/3 sub-billeteras desde .midnight-wallet-state.`);
-    }
-
+    
     console.log('  Sincronizando con la red...');
     const syncStart = Date.now();
     const syncInterval = setInterval(() => {
@@ -158,7 +122,7 @@ async function main() {
     }, 5000);
     await walletCtx.wallet.waitForSyncedState();
     clearInterval(syncInterval);
-    process.stdout.write('\r  ✓ Sincronizado con la red.                                   \n');
+    process.stdout.write('\r  ✓ Sincronizado con la red.                                             \n');
 
     await persistWalletState(network, walletCtx);
     const state = await walletCtx.wallet.waitForSyncedState();
@@ -168,16 +132,10 @@ async function main() {
     console.log(`  Mi Dirección: ${myAddress}`);
     console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
 
-    if (balance === 0n && network !== 'undeployed' && networkConfig.faucet) {
-      console.log('  ⚠ Billetera sin fondos tNight. Carga desde el faucet:');
-      console.log(`     ${networkConfig.faucet}`);
-      console.log(`     Dirección: ${myAddress}\n`);
-    }
-
     console.log('  Conectando con el contrato...');
     const providers = await createProviders(walletCtx);
 
-    const deployed: any = await findDeployedContract(providers, {
+    const deployed = await findDeployedContract(providers, {
       compiledContract: compiledContract as any,
       contractAddress: deployment.address,
       privateStateId: PRIVATE_STATE_ID,
@@ -199,44 +157,40 @@ async function main() {
 
       switch (choice.trim()) {
         case '1': {
-          console.log('\n--- Registrar Nueva Mascota ---');
-          const petIdInput = await rl.question('  ID de la mascota (ej. pet-01): ');
-          const ownerInput = await rl.question('  Dirección del propietario (Enter para usar la tuya): ');
-          const nameInput = await rl.question('  Nombre de la mascota: ');
+          console.log('\n--- Inspeccionando Contract y deployed ---');
+          console.log("Propiedades de HelloWorld.Contract:", Object.getOwnPropertyNames(HelloWorld.Contract));
+          console.log("Prototipo de HelloWorld.Contract:", Object.getOwnPropertyNames(HelloWorld.Contract.prototype));
+          console.log("Propiedades de deployed:", Object.keys(deployed));
+          console.log('\n--- Registrar Mascota (Con Marshallers) ---');
           
-          console.log('\n  Especies disponibles:');
-          console.log('  0. Perro | 1. Gato | 2. Ave | 3. Conejo | 4. Otro');
-          const speciesInput = await rl.question('  Especie (número del 0 al 4): ');
-          
-          const breedInput = await rl.question('  Raza: ');
-          const birthYearInput = await rl.question('  Año de nacimiento (ej. 2022): ');
+          const petIdVal = "pet-test-01";
+          const ownerVal = myAddress;
+          const nameVal = "Firulais";
+          const speciesVal = HelloWorld.Species.dog;
+          const breedVal = "Labrador";
+          const birthYearVal = 2022n;
 
-          // Transformar a Bytes<32> usando la función auxiliar
-          const petIdBytes = stringToBytes32((petIdInput ?? '').trim());
-          const ownerAddressStr = ownerInput.trim() || myAddress;
-          const ownerBytes = stringToBytes32(ownerAddressStr.trim());
-
-          const birthYearBigInt = BigInt((birthYearInput ?? '2024').trim());
-          const speciesNum = Number((speciesInput ?? '0').trim());
-
-          console.log('\n  Generando ZK Proof y registrando mascota (30-60s)...');
+          console.log('  Serializando parámetros y enviando transacción...');
           try {
+            // Envolvemos cada parámetro con el marshaller correspondiente del contrato
             const tx = await deployed.callTx.registerPet(
-              petIdBytes,                  // 0. petId (Bytes<32>)
-              ownerBytes,                  // 1. owner (Bytes<32>)  <- ¡Aquí iba el string por error!
-              (nameInput ?? '').trim(),    // 2. name (Opaque<"string">)
-              speciesNum,                  // 3. species (Species)
-              (breedInput ?? '').trim(),   // 4. breed (Opaque<"string">)
-              birthYearBigInt              // 5. birthYear (Uint<16>)
+              HelloWorld.marshallers.string.serialize(petIdVal),     // Para Opaque<"string">
+              HelloWorld.marshallers.string.serialize(ownerVal),     // Para Opaque<"string">
+              HelloWorld.marshallers.string.serialize(nameVal),      // Para Opaque<"string">
+              speciesVal,                                            // El enum Species suele manejarse nativo o por su marshaller
+              HelloWorld.marshallers.string.serialize(breedVal),     // Para Opaque<"string">
+              HelloWorld.marshallers.Uint16.serialize(birthYearVal)  // Para Uint<16>
             );
 
-            console.log(`\n  ✅ Mascota registrada con éxito.`);
-            console.log(`  ID Transacción: ${tx.public?.txId || tx.txHash}\n`);
+            console.log(`\n  ✅ ¡Mascota registrada con éxito!`);
+            console.log(`  ID Transacción: ${tx.public?.txId || (tx as any).txHash}\n`);
           } catch (error: any) {
-            console.error('\n  ❌ Error al registrar:', error?.message || error);
+            console.error('\n  ❌ Error al registrar con marshallers:');
+            console.error(error);
           }
           break;
         }
+
         case '2': {
           console.log('\n--- Registrar Visita Veterinaria ---');
           const petId = await rl.question('  ID de la mascota (ej. pet-01): ');
@@ -247,14 +201,13 @@ async function main() {
 
           try {
             const tx = await deployed.callTx.addVisit(
-              stringToBytes32(petId.trim()),
-              stringToBytes32(myAddress.trim()),
+              petId.trim(),
+              myAddress.trim(),
               note.trim()
             );
 
             console.log(`\n  ✅ Visita registrada con éxito por la wallet médica: ${myAddress}`);
-            console.log(`  ID Transacción: ${tx.public.txId}`);
-            console.log(`  Bloque: ${tx.public.blockHeight}\n`);
+            console.log(`  ID Transacción: ${tx.public?.txId || (tx as any).txHash}\n`);
           } catch (error) {
             console.error('\n  ❌ Error al registrar visita:', error instanceof Error ? error.message : error);
           }

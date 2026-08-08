@@ -11,7 +11,7 @@ export enum Species {
 }
 
 export struct Pet {
-  owner: Bytes<32>;
+  owner: Opaque<"string">;
   name: Opaque<"string">;
   species: Species;
   breed: Opaque<"string">;
@@ -19,29 +19,27 @@ export struct Pet {
 }
 
 export struct VisitRecord {
-  doctor: Bytes<32>;
+  doctor: Opaque<"string">;
   note: Opaque<"string">;
 }
 
-// Mapas en el Ledger de la Blockchain
-export ledger pets: Map<Bytes<32>, Pet>;
-export ledger visitCount: Map<Bytes<32>, Counter>;
-export ledger lastVisit: Map<Bytes<32>, VisitRecord>;
+// Mapas indexados directamente por string (Opaque<"string">)
+export ledger pets: Map<Opaque<"string">, Pet>;
+export ledger visitCount: Map<Opaque<"string">, Counter>;
+export ledger lastVisit: Map<Opaque<"string">, VisitRecord>;
 
 // ─── CIRCUITO 1: Registrar una nueva mascota ────────────────────────────────
 
 export circuit registerPet(
-  petId: Bytes<32>,
-  owner: Bytes<32>,
+  petId: Opaque<"string">,
+  owner: Opaque<"string">,
   name: Opaque<"string">,
   species: Species,
   breed: Opaque<"string">,
   birthYear: Uint<16>
 ): [] {
-  // Verificar que la mascota no exista previamente
   assert(!pets.member(disclose(petId)), "Esta mascota ya esta registrada");
 
-  // Registrar la mascota asociada a la wallet del dueño
   pets.insert(disclose(petId), Pet {
     owner: disclose(owner),
     name: disclose(name),
@@ -50,24 +48,20 @@ export circuit registerPet(
     birthYear: disclose(birthYear)
   });
 
-  // Inicializar contador de visitas
   visitCount.insertDefault(disclose(petId));
 }
 
 // ─── CIRCUITO 2: Registrar una consulta / visita médica ──────────────────────
 
 export circuit addVisit(
-  petId: Bytes<32>,
-  doctorAddress: Bytes<32>,
+  petId: Opaque<"string">,
+  doctorAddress: Opaque<"string">,
   note: Opaque<"string">
 ): [] {
-  // Verificar que la mascota esté registrada
   assert(pets.member(disclose(petId)), "La mascota no esta registrada");
 
-  // Incrementar el contador de visitas
   visitCount.lookup(disclose(petId)).increment(1);
 
-  // Almacenar la última visita con la wallet del médico firmante
   lastVisit.insert(disclose(petId), VisitRecord {
     doctor: disclose(doctorAddress),
     note: disclose(note)
