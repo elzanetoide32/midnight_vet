@@ -1,4 +1,4 @@
-pragma language_version >= 0.23;
+pragma language_version >= 0.22;
 
 import CompactStandardLibrary;
 
@@ -15,7 +15,7 @@ export struct Pet {
   name: Opaque<"string">;
   species: Species;
   breed: Opaque<"string">;
-  birthYear: Uint<16>;
+  birthYear: Opaque<"string">;
 }
 
 export struct VisitRecord {
@@ -23,12 +23,9 @@ export struct VisitRecord {
   note: Opaque<"string">;
 }
 
-// Mapas indexados directamente por string (Opaque<"string">)
 export ledger pets: Map<Opaque<"string">, Pet>;
 export ledger visitCount: Map<Opaque<"string">, Counter>;
 export ledger lastVisit: Map<Opaque<"string">, VisitRecord>;
-
-// ─── CIRCUITO 1: Registrar una nueva mascota ────────────────────────────────
 
 export circuit registerPet(
   petId: Opaque<"string">,
@@ -36,7 +33,7 @@ export circuit registerPet(
   name: Opaque<"string">,
   species: Species,
   breed: Opaque<"string">,
-  birthYear: Uint<16>
+  birthYear: Opaque<"string">
 ): [] {
   assert(!pets.member(disclose(petId)), "Esta mascota ya esta registrada");
 
@@ -50,8 +47,6 @@ export circuit registerPet(
 
   visitCount.insertDefault(disclose(petId));
 }
-
-// ─── CIRCUITO 2: Registrar una consulta / visita médica ──────────────────────
 
 export circuit addVisit(
   petId: Opaque<"string">,

@@ -144,53 +144,63 @@ async function main() {
 
     console.log('  ✅ ¡Conectado exitosamente!\n');
 
+    console.log('  Iniciando Servidor Web HTTP en puerto 3000...');
+    startWebServer(deployed, 3000);
+    console.log('  🌐 Servidor web activo y escuchando.\n');
+
     let running = true;
     while (running) {
       console.log('─── Menú Veterinaria ───────────────────────────────────────────');
       console.log('  1. Registrar nueva mascota');
       console.log('  2. Registrar visita veterinaria');
-      console.log('  3. Consultar saldo de billetera');
-      console.log('  4. Iniciar Servidor Web (UAI HTTP)');
-      console.log('  5. Salir\n');
+      console.log('  3. Consultar saldo de billetera');    
+      console.log('  4. Salir\n');
 
       const choice = await rl.question('  Selecciona una opción: ');
 
       switch (choice.trim()) {
-        case '1': {
-          console.log('\n--- Inspeccionando Contract y deployed ---');
-          console.log("Propiedades de HelloWorld.Contract:", Object.getOwnPropertyNames(HelloWorld.Contract));
-          console.log("Prototipo de HelloWorld.Contract:", Object.getOwnPropertyNames(HelloWorld.Contract.prototype));
-          console.log("Propiedades de deployed:", Object.keys(deployed));
-          console.log('\n--- Registrar Mascota (Con Marshallers) ---');
+case '1': {
+          console.log('\n--- Registrar Nueva Mascota ---');
+          const petIdInput = await rl.question('  ID de la mascota (ej. pet-01): ');
+          const ownerInput = await rl.question('  Dirección del propietario (Enter para usar la tuya): ');
+          const nameInput = await rl.question('  Nombre de la mascota: ');
           
-          const petIdVal = "pet-test-01";
-          const ownerVal = myAddress;
-          const nameVal = "Firulais";
-          const speciesVal = HelloWorld.Species.dog;
-          const breedVal = "Labrador";
-          const birthYearVal = 2022n;
+          console.log('\n  Especies disponibles:');
+          console.log('  0: dog | 1: cat | 2: bird | 3: rabbit | 4: other');
+          const speciesInput = await rl.question('  Especie (número del 0 al 4): ');
+          
+          const breedInput = await rl.question('  Raza: ');
+          const birthYearInput = await rl.question('  Año de nacimiento (ej. 2024): ');
 
-          console.log('  Serializando parámetros y enviando transacción...');
+          const ownerAddressStr = ownerInput.trim() || myAddress;
+          const speciesIndex = Number((speciesInput ?? '0').trim());
+
+          const selectedSpecies = [
+            Species.dog,
+            Species.cat,
+            Species.bird,
+            Species.rabbit,
+            Species.other,
+          ][speciesIndex] ?? Species.dog;
+
+          console.log('\n  Generando ZK Proof y registrando mascota (30-60s)...');
           try {
-            // Envolvemos cada parámetro con el marshaller correspondiente del contrato
             const tx = await deployed.callTx.registerPet(
-              HelloWorld.marshallers.string.serialize(petIdVal),     // Para Opaque<"string">
-              HelloWorld.marshallers.string.serialize(ownerVal),     // Para Opaque<"string">
-              HelloWorld.marshallers.string.serialize(nameVal),      // Para Opaque<"string">
-              speciesVal,                                            // El enum Species suele manejarse nativo o por su marshaller
-              HelloWorld.marshallers.string.serialize(breedVal),     // Para Opaque<"string">
-              HelloWorld.marshallers.Uint16.serialize(birthYearVal)  // Para Uint<16>
+              petIdInput.trim(),
+              ownerAddressStr.trim(),
+              nameInput.trim(),
+              selectedSpecies,
+              breedInput.trim(),
+              birthYearInput.trim() // <-- String plano para Opaque<"string">
             );
 
-            console.log(`\n  ✅ ¡Mascota registrada con éxito!`);
+            console.log(`\n  ✅ Mascota registrada con éxito.`);
             console.log(`  ID Transacción: ${tx.public?.txId || (tx as any).txHash}\n`);
           } catch (error: any) {
-            console.error('\n  ❌ Error al registrar con marshallers:');
-            console.error(error);
+            console.error('\n  ❌ Error al registrar:', error?.message || error);
           }
           break;
         }
-
         case '2': {
           console.log('\n--- Registrar Visita Veterinaria ---');
           const petId = await rl.question('  ID de la mascota (ej. pet-01): ');
@@ -225,13 +235,8 @@ async function main() {
           break;
         }
 
-        case '4': {
-          console.log('\n  Iniciando Servidor Web HTTP...');
-          startWebServer(deployed, 3000);
-          break;
-        }
 
-        case '5':
+        case '4':
           running = false;
           console.log('\n  👋 ¡Hasta luego!\n');
           break;
