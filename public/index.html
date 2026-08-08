@@ -3,299 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Longeva - Historia Clínica Descentralizada</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>DApp Veterinaria - Midnight</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-stone-50 text-stone-800 font-sans min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+<body class="bg-stone-100 text-stone-800 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Header / Estado de Conexión -->
+        <header class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-stone-900">🐾 Veterinaria ZK DApp</h1>
+                <p class="text-sm text-stone-500">Gestión privada de pacientes sobre Midnight</p>
+            </div>
+            <div id="wallet-status" class="text-sm font-mono bg-stone-50 px-4 py-2 rounded-xl border border-stone-200 text-stone-600">
+                Wallet no conectada
+            </div>
+        </header>
 
-    <!-- Header / Navbar estilo corporativo/salud -->
-    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-stone-200 px-6 py-4 flex justify-between items-center shadow-xs">
-        <div class="flex items-center gap-2">
-            <span class="text-2xl">🐾</span>
-            <span class="text-xl font-bold tracking-tight text-emerald-800">Longeva <span class="font-light text-stone-500 text-sm">Multiespecie</span></span>
-        </div>
-        <div id="user-info" class="hidden items-center gap-3">
-            <span id="display-wallet" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-full font-medium"></span>
-            <button onclick="logout()" class="text-xs bg-stone-100 hover:bg-red-50 hover:text-red-600 text-stone-600 px-3 py-1.5 rounded-md transition font-medium border border-stone-200">Cerrar sesión</button>
-        </div>
-    </header>
-
-    <!-- Contenedor Principal -->
-    <main class="flex-grow flex flex-col items-center justify-center p-4">
-
-        <!-- VISTA DE BIENVENIDA / LANDING (Se oculta al loguearse) -->
-        <div id="landing-view" class="w-full max-w-4xl py-12 px-6 text-center space-y-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            <!-- Hero Section -->
-            <div class="space-y-4 max-w-2xl mx-auto">
-                <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Blockchain Veterinaria</span>
-                <h1 class="text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight">
-                    Cuidamos sus años dorados con <span class="text-emerald-600">transparencia</span>
-                </h1>
-                <p class="text-stone-600 text-base md:text-lg">
-                    El historial clínico descentralizado e inalterable para tus mascotas y pacientes. Conectá tu wallet para comenzar.
-                </p>
-                <div class="pt-4 flex flex-col sm:flex-row justify-center gap-3">
-                    <button onclick="openLoginModal()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-6 py-3 rounded-xl shadow-md transition duration-200 flex items-center justify-center gap-2">
-                        <span>Acceder al Sistema</span> ➡️
-                    </button>
-                </div>
-            </div>
-
-            <!-- Grilla informativa o de características -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 text-left">
-                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-2">
-                    <div class="text-2xl">🔒</div>
-                    <h3 class="font-bold text-stone-900">Inalterable</h3>
-                    <p class="text-sm text-stone-500">Cada visita y diagnóstico queda registrado de forma segura y permanente en la blockchain.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-2">
-                    <div class="text-2xl">🩺</div>
-                    <h3 class="font-bold text-stone-900">Para Veterinarios</h3>
-                    <p class="text-sm text-stone-500">Registrá mascotas y actualiza historiales clínicos médicos de manera rápida y autorizada.</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-2">
-                    <div class="text-2xl">🐶</div>
-                    <h3 class="font-bold text-stone-900">Para Dueños</h3>
-                    <p class="text-sm text-stone-500">Consultá el seguimiento de salud de tus compañeros en tiempo real desde cualquier lugar.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL / SECCIÓN DE LOGIN (Aparece al hacer click en acceder) -->
-        <div id="login-section" class="hidden w-full max-w-md py-8">
-            <div class="bg-white p-8 rounded-2xl shadow-xl border border-stone-200 space-y-6 relative">
-                <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700 text-sm font-bold">✕</button>
-                <div class="text-center space-y-1">
-                    <h2 class="text-2xl font-bold text-stone-900">Iniciar Sesión</h2>
-                    <p class="text-xs text-stone-500">Ingresá los datos de tu wallet para continuar</p>
-                </div>
-                <form id="login-form" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Dirección de Wallet</label>
-                        <input type="text" id="wallet-address" required placeholder="0x..." 
-                            class="w-full px-4 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Key (Opcional para pruebas)</label>
-                        <input type="password" id="wallet-key" placeholder="••••••••••••••••" 
-                            class="w-full px-4 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-stone-600 uppercase mb-1">Seleccionar Rol</label>
-                        <select id="user-role" class="w-full px-4 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm">
-                            <option value="doctor">Doctor / Veterinario</option>
-                            <option value="owner">Dueño de Mascota</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-3 rounded-xl transition duration-200 shadow-sm text-sm">
-                        Continuar
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- VISTA DOCTOR (Privada) -->
-        <section id="doctor-section" class="hidden w-full max-w-3xl space-y-6 py-6">
+            <!-- FORMULARIO 1: Registrar Mascota -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                <h3 class="text-lg font-bold mb-4 text-emerald-800 border-b border-stone-100 pb-2">➕ Registrar Nueva Mascota</h3>
-                <form id="form-mascota" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h2 class="text-lg font-semibold mb-4 text-stone-900">Registrar Nueva Mascota</h2>
+                <form id="form-mascota" class="space-y-4">
                     <div>
                         <label class="block text-xs font-medium text-stone-600 mb-1">ID de Mascota</label>
-                        <input type="number" name="id" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+                        <input type="text" id="pet-id" required placeholder="Ej: pet-001" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
                     </div>
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-stone-600 mb-1">Dirección del Propietario (Dejar en blanco para usar tu wallet)</label>
+                        <input type="text" id="owner-address" placeholder="mn_addr_... (opcional)" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm font-mono">
+                    </div>
+
                     <div>
                         <label class="block text-xs font-medium text-stone-600 mb-1">Nombre</label>
-                        <input type="text" name="nombre" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+                        <input type="text" id="pet-name" required placeholder="Ej: Firulais" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-stone-600 mb-1">Especie (0: Perro, 1: Gato)</label>
-                        <input type="number" name="especie" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-stone-600 mb-1">Especie (Número)</label>
+                            <input type="number" id="pet-species" required value="0" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-stone-600 mb-1">Año de Nacimiento</label>
+                            <input type="text" id="pet-birth" required placeholder="2020" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+                        </div>
                     </div>
+
                     <div>
                         <label class="block text-xs font-medium text-stone-600 mb-1">Raza</label>
-                        <input type="text" name="raza" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+                        <input type="text" id="pet-breed" required placeholder="Ej: Mestizo" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-medium text-stone-600 mb-1">Año de Nacimiento</label>
-                        <input type="number" name="anioNacimiento" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
-                    </div>
-                    <button type="submit" class="md:col-span-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-2.5 rounded-xl transition text-sm">
-                        Guardar Mascota en Blockchain
+
+                    <button type="submit" class="w-full py-2.5 bg-stone-900 text-white rounded-xl font-medium text-sm hover:bg-stone-800 transition-colors">
+                        Registrar Mascota (6 args)
                     </button>
                 </form>
             </div>
 
+            <!-- FORMULARIO 2: Agregar Visita -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                <h3 class="text-lg font-bold mb-4 text-emerald-800 border-b border-stone-100 pb-2">🩺 Registrar Visita / Historial</h3>
+                <h2 class="text-lg font-semibold mb-4 text-stone-900">Registrar Visita Médica</h2>
                 <form id="form-visita" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-medium text-stone-600 mb-1">ID de la Mascota</label>
-                        <input type="number" name="petId" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
+                        <label class="block text-xs font-medium text-stone-600 mb-1">ID de Mascota Existente</label>
+                        <input type="text" id="visit-pet-id" required placeholder="Ej: pet-001" class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
                     </div>
+
                     <div>
                         <label class="block text-xs font-medium text-stone-600 mb-1">Nota / Diagnóstico</label>
-                        <textarea name="nota" rows="3" required class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm"></textarea>
+                        <textarea id="visit-note" required rows="4" placeholder="Detalles de la consulta..." class="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm"></textarea>
                     </div>
-                    <button type="submit" class="w-full bg-stone-800 hover:bg-stone-900 text-white font-medium py-2.5 rounded-xl transition text-sm">
-                        Agregar Historial Médico
+
+                    <button type="submit" class="w-full py-2.5 bg-stone-900 text-white rounded-xl font-medium text-sm hover:bg-stone-800 transition-colors mt-8">
+                        Registrar Visita (3 args)
                     </button>
                 </form>
             </div>
-        </section>
 
-        <!-- VISTA DUEÑO (Privada) -->
-        <section id="owner-section" class="hidden w-full max-w-3xl space-y-6 py-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                <h3 class="text-lg font-bold mb-4 text-emerald-800 border-b border-stone-100 pb-2">🐾 Historial de mis Mascotas</h3>
-                <p class="text-xs text-stone-500 mb-4">Ingresa el ID de tu mascota para consultar sus visitas registradas:</p>
-                <div class="flex gap-2 mb-4">
-                    <input type="number" id="search-pet-id" placeholder="ID de mascota" class="flex-grow px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm">
-                    <button id="btn-search-history" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-xl text-sm transition">Consultar</button>
-                </div>
-                <div id="history-result" class="border border-stone-200 rounded-xl p-4 bg-stone-50 min-h-[120px] text-sm text-stone-600">
-                    Busca una mascota para ver su historial médico...
-                </div>
-            </div>
-        </section>
+        </div>
 
-    </main>
+        <!-- Consola de Logs / Resultados -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
+            <h3 class="text-sm font-semibold mb-2 text-stone-700">Estado de Transacciones / Logs:</h3>
+            <pre id="log-output" class="bg-stone-900 text-stone-100 p-4 rounded-xl text-xs font-mono h-32 overflow-y-auto">Esperando acciones...</pre>
+        </div>
 
-    <!-- Footer -->
-    <footer class="text-center py-6 text-xs text-stone-400 border-t border-stone-200">
-        Longeva Multiespecie &copy; 2026 - Todos los derechos reservados
-    </footer>
+    </div>
 
-    <!-- Lógica Interactiva y Rutas -->
+    <!-- Script del Frontend para conectar con las rutas Express -->
     <script>
-        const landingView = document.getElementById('landing-view');
-        const loginSection = document.getElementById('login-section');
-        const doctorSection = document.getElementById('doctor-section');
-        const ownerSection = document.getElementById('owner-section');
-        const loginForm = document.getElementById('login-form');
-        const userInfo = document.getElementById('user-info');
-        const displayWallet = document.getElementById('display-wallet');
+        // Simulando la obtención de la wallet local (ajustalo según cómo la cargues en tu app)
+        let currentWalletAddress = "mn_addr_mock_doctor_12345"; 
+        document.getElementById('wallet-status').innerText = `Wallet: ${currentWalletAddress.substring(0, 10)}...`;
 
-        function openLoginModal() {
-            landingView.classList.add('hidden');
-            loginSection.classList.remove('hidden');
+        function log(message) {
+            const output = document.getElementById('log-output');
+            output.innerText += `\n[${new Date().toLocaleTimeString()}] ${message}`;
+            output.scrollTop = output.scrollHeight;
         }
 
-        function closeLoginModal() {
-            loginSection.classList.add('hidden');
-            landingView.classList.remove('hidden');
-        }
-
-        function checkAuth() {
-            const session = sessionStorage.getItem('vet_user');
-            if (!session) {
-                // Sin sesión: Muestra landing y oculta paneles privados
-                landingView.classList.remove('hidden');
-                loginSection.classList.add('hidden');
-                doctorSection.classList.add('hidden');
-                ownerSection.classList.add('hidden');
-                userInfo.classList.add('hidden');
-                userInfo.classList.remove('flex');
-                return null;
-            }
-            return JSON.parse(session);
-        }
-
-        function initApp() {
-            const user = checkAuth();
-            if (user) {
-                landingView.classList.add('hidden');
-                loginSection.classList.add('hidden');
-                userInfo.classList.remove('hidden');
-                userInfo.classList.add('flex');
-                displayWallet.textContent = `${user.wallet.substring(0, 6)}...${user.wallet.slice(-4)} (${user.role === 'doctor' ? 'Veterinario' : 'Dueño'})`;
-
-                if (user.role === 'doctor') {
-                    doctorSection.classList.remove('hidden');
-                } else {
-                    ownerSection.classList.remove('hidden');
-                }
-            }
-        }
-
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const wallet = document.getElementById('wallet-address').value;
-            const key = document.getElementById('wallet-key').value;
-            const role = document.getElementById('user-role').value;
-
-            sessionStorage.setItem('vet_user', JSON.stringify({ wallet, key, role }));
-            loginForm.reset();
-            initApp();
-        });
-
-        function logout() {
-            sessionStorage.removeItem('vet_user');
-            initApp();
-        }
-
-        // Formularios de backend
+        // Enviar Mascota (6 argumentos en el backend)
         document.getElementById('form-mascota').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+            log('Generando ZK Proof y registrando mascota...');
+
+            const payload = {
+                id: document.getElementById('pet-id').value,
+                ownerAddress: document.getElementById('owner-address').value,
+                nombre: document.getElementById('pet-name').value,
+                especie: document.getElementById('pet-species').value,
+                raza: document.getElementById('pet-breed').value,
+                anioNacimiento: document.getElementById('pet-birth').value,
+                walletAddress: currentWalletAddress
+            };
 
             try {
                 const res = await fetch('/api/mascotas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
-                const result = await res.json();
-                if (result.success) {
-                    alert('¡Mascota registrada con éxito! TxID: ' + result.txId);
-                    e.target.reset();
+                const data = await res.json();
+                if(data.success) {
+                    log(`¡Mascota registrada con éxito! TX: ${data.txId}`);
                 } else {
-                    alert('Error: ' + result.error);
+                    log(`Error: ${data.error}`);
                 }
             } catch (err) {
-                alert('Error de red al registrar mascota.');
+                log(`Error de red: ${err.message}`);
             }
         });
 
+        // Enviar Visita (3 argumentos en el backend)
         document.getElementById('form-visita').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+            log('Agregando visita médica...');
+
+            const payload = {
+                petId: document.getElementById('visit-pet-id').value,
+                nota: document.getElementById('visit-note').value,
+                walletAddress: currentWalletAddress
+            };
 
             try {
                 const res = await fetch('/api/visitas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
-                const result = await res.json();
-                if (result.success) {
-                    alert('¡Visita registrada con éxito! TxID: ' + result.txId);
-                    e.target.reset();
+                const data = await res.json();
+                if(data.success) {
+                    log(`¡Visita agregada con éxito! TX: ${data.txId}`);
                 } else {
-                    alert('Error: ' + result.error);
+                    log(`Error: ${data.error}`);
                 }
             } catch (err) {
-                alert('Error de red al registrar visita.');
+                log(`Error de red: ${err.message}`);
             }
         });
-
-        document.getElementById('btn-search-history').addEventListener('click', () => {
-            const petId = document.getElementById('search-pet-id').value;
-            const resultBox = document.getElementById('history-result');
-            if (!petId) {
-                alert('Ingresa un ID válido');
-                return;
-            }
-            resultBox.innerHTML = `<span class="text-emerald-700 font-medium">Buscando registros para la mascota ID ${petId}...</span>`;
-            setTimeout(() => {
-                resultBox.innerHTML = `📋 <strong>Historial de Mascota #${petId}</strong>:<br>- Vacunación antirrábica al día.<br>- Control general sin anomalías.`;
-            }, 800);
-        });
-
-        initApp();
     </script>
 </body>
 </html>

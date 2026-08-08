@@ -24,42 +24,30 @@ export function stringToOpaque(text: string): Uint8Array {
 
 // ─── Lógica para llamar a los circuitos de tu contrato ───────────────────────
 
-export async function registrarMascota(
-  contract: any,
-  datos: {
-    id: string;
-    nombre: string;
-    especie: Species;
-    raza: string;
-    anioNacimiento: number;
-  }
-) {
-  const petIdBytes = stringToBytes32(datos.id);
-  const nombreBytes = stringToOpaque(datos.nombre);
-  const razaBytes = stringToOpaque(datos.raza);
+export async function registrarMascota(deployedContract: any, data: any) {
+  // Si no puso nada en ownerAddress, usamos la wallet del doctor o la que venga por defecto
+  const owner = data.ownerAddress && data.ownerAddress.trim() !== "" 
+    ? data.ownerAddress.trim() 
+    : data.walletAddress; // Wallet de quien está ejecutando la sesión
 
-  // Invocación directa del circuito registerPet definido en Compact
-  const tx = await contract.callTx.registerPet(
-    petIdBytes,
-    nombreBytes,
-    datos.especie,
-    razaBytes,
-    BigInt(datos.anioNacimiento)
+  const tx = await deployedContract.callTx.registerPet(
+    data.id.trim(),
+    owner,
+    data.nombre.trim(),
+    Number(data.especie),
+    data.raza.trim(),
+    String(data.anioNacimiento) // String plano para Opaque<"string">
   );
 
   return tx;
 }
 
-export async function registrarVisita(
-  contract: any,
-  petId: string,
-  notaDiagnostico: string
-) {
-  const petIdBytes = stringToBytes32(petId);
-  const notaBytes = stringToOpaque(notaDiagnostico);
 
-  // Invocación directa del circuito addVisit definido en Compact
-  const tx = await contract.callTx.addVisit(petIdBytes, notaBytes);
-
+export async function registrarVisita(deployedContract: any, data: any) {
+  const tx = await deployedContract.callTx.addVisit(
+    data.petId.trim(),
+    data.walletAddress.trim(), // La wallet del médico logueado (myAddress)
+    data.nota.trim()
+  );
   return tx;
 }

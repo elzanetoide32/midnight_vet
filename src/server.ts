@@ -15,13 +15,15 @@ export function startWebServer(deployedContract: any, port = 3000) {
 
   app.post('/api/mascotas', async (req: Request, res: Response) => {
     try {
-      const { id, nombre, especie, raza, anioNacimiento } = req.body;
+      const { id, ownerAddress, nombre, especie, raza, anioNacimiento, walletAddress } = req.body;
       const tx = await registrarMascota(deployedContract, {
         id,
+        ownerAddress,
         nombre,
-        especie: Number(especie),
+        especie,
         raza,
-        anioNacimiento: Number(anioNacimiento),
+        anioNacimiento,
+        walletAddress
       });
       res.json({ success: true, txId: tx.public.txId });
     } catch (error: any) {
@@ -31,8 +33,12 @@ export function startWebServer(deployedContract: any, port = 3000) {
 
   app.post('/api/visitas', async (req: Request, res: Response) => {
     try {
-      const { petId, nota } = req.body;
-      const tx = await registrarVisita(deployedContract, petId, nota);
+      const { petId, nota, walletAddress } = req.body;
+      const tx = await registrarVisita(deployedContract, {
+        petId,
+        nota,
+        walletAddress
+      });
       res.json({ success: true, txId: tx.public.txId });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
